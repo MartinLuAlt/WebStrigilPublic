@@ -1,0 +1,8 @@
+scrapy>=2.11.0
+scrapy-playwright>=0.0.30
+openai>=1.14.3
+pydantic>=2.6.4
+rich>=13.7.0
+python-dotenv>=1.0.1
+fastapi
+uvicorn[standard]
