@@ -90,18 +90,10 @@ class LLMPlaywrightSpider(Spider):
         )
         self.errors.append(error)
 
-        # Optionally store in session.history as an error visit
-        self.session.history.append({
-            "url": failure.request.url,
-            "error": str(failure.value),
-            "depth": failure.request.meta.get("depth", -1)
-        })
-
-    def _ask_llm(self, details, instruction, prev_page_action) -> LLMResponse | None:
+    async def _ask_llm(self, details, instruction, prev_page_action) -> LLMResponse | None:
         try:
-            # print("_ask_llm called")
             system_prompt = config['system_prompt']
-            decision_text, error = ask_llm(self.session, system_prompt, instruction, details, prev_page_action)
+            decision_text, error = await ask_llm(self.session, system_prompt, instruction, details, prev_page_action)
             
             # If there was an error from the LLM call, add it to our errors list
             if error:
@@ -158,13 +150,14 @@ class LLMPlaywrightSpider(Spider):
 
     def spider_closed(self, spider):
         # Serialize session history
-        serialized = [page_context.model_dump() for page_context in self.session.history]
-        log = json.dumps(serialized, indent=2)
-        print("Crawl logs:", log)
-        f = open("results.json", "a")
-        f.write(log)
-        print("Saved crawl session history to results.json", f.name)
-        f.close()
+        # serialized = [page_context.model_dump() for page_context in self.session.history]
+        # log = json.dumps(serialized, indent=2)
+        # print("Crawl logs:", log)
+        # f = open("results.json", "a")
+        # f.write(log)
+        # print("Saved crawl session history to results.json", f.name)
+        # f.close()
         
         # Store errors in the session
+        print("DEBUG: Total error count -", len(self.errors))
         self.session.errors = self.errors

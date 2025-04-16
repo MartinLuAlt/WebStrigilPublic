@@ -42,6 +42,7 @@ async def run_crawl(start_url: str, user_instruction: str, max_depth: int = 3) -
         deferred = runner.crawl(CustomLLMPlaywrightSpider)
         
         def callback(result):
+            print("DEBUG: Crawl complete, Callback hit")
             if isinstance(result, Exception):
                 error = WebScraperError(
                     error_type="crawl_error",
@@ -54,6 +55,7 @@ async def run_crawl(start_url: str, user_instruction: str, max_depth: int = 3) -
                 asyncio.get_event_loop().call_soon_threadsafe(future_resp.set_result, None)
                 
         deferred.addBoth(callback)
+
         await future_resp
 
     except Exception as e:

@@ -31,14 +31,7 @@ async def crawl_endpoint(request: CrawlRequest):
         for ctx in session.history:
             if hasattr(ctx, 'to_public_context'):
                 public_history.append(ctx.to_public_context())
-            else:
-                # Handle error entries in history
-                if isinstance(ctx, dict) and 'error' in ctx:
-                    errors.append(WebScraperError(
-                        error_type="history_error",
-                        message=f"Error in history entry: {ctx.get('error')}",
-                        details={"url": ctx.get('url'), "depth": ctx.get('depth')}
-                    ))
+        errors = [*session.errors,*errors]
         
         # Prepare response
         response_data = {

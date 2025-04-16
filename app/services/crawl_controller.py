@@ -25,7 +25,7 @@ class CrawlController:
 
         details = await extract_details(page)
         print("Parsing page: ",details, prev_page_action)
-        llm_response = self.spider._ask_llm(details, self.session.user_instruction, prev_page_action)
+        llm_response = await self.spider._ask_llm(details, self.session.user_instruction, prev_page_action)
         print("LLM response:")
         pprint(not llm_response)
         if not llm_response:

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pprint import pprint
-from openai import OpenAI
+from openai import AsyncOpenAI
 from playwright.async_api import async_playwright, Playwright
 import json
 import re
@@ -13,13 +13,13 @@ from app.schemas.context_schema import CrawlSession, PageDetails, PageAction
 from pydantic import HttpUrl
 
 openai_api_key = os.getenv("OPEN_ROUTER_KEY")
-client = OpenAI(
+client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key= openai_api_key,
-    http_client=httpx.Client(timeout=15.0)
+    api_key=openai_api_key,
+    timeout=httpx.Timeout(1.0, connect=1.0),
 )
 
-def ask_llm(session: CrawlSession, system_prompt: str, user_instructions: str, page_details: PageDetails,prev_page_action : Optional[PageAction]= None) -> Tuple[Optional[str], Optional[WebScraperError]]:
+async def ask_llm(session: CrawlSession, system_prompt: str, user_instructions: str, page_details: PageDetails,prev_page_action : Optional[PageAction]= None) -> Tuple[Optional[str], Optional[WebScraperError]]:
     """
     Ask the LLM for guidance on how to interact with a webpage.
     
@@ -92,9 +92,13 @@ def ask_llm(session: CrawlSession, system_prompt: str, user_instructions: str, p
     
     try:
         print("DEBUG: Sending request to LLM API...")
-        completion = client.chat.completions.create(
-            model="deepseek/deepseek-chat-v3-0324:free",  # or claude-3-haiku
-            messages=message
+        # Set timeout directly on the API call
+        completion = await asyncio.wait_for(
+            client.chat.completions.create(
+                model="deepseek/deepseek-chat-v3-0324:free",  # or claude-3-haiku
+                messages=message
+            ), 
+            timeout=1.0  # 1 second timeout for debugging
         )
         print("DEBUG: LLM API response received")
         print("LLM completion:")
@@ -124,7 +128,25 @@ def ask_llm(session: CrawlSession, system_prompt: str, user_instructions: str, p
         error = LLMError(
             error_type="llm_response_error",
             message="Could not extract response content from API response",
-            details={"response": str(completion)}
+            details={"error": "Response parsing error"}
+        )
+        return None, error
+    
+    except httpx.TimeoutException as e:
+        print(f"ERROR: LLM API request timed out: {str(e)}")
+        error = LLMError(
+            error_type="llm_timeout_error",
+            message="LLM API request timed out",
+            details={"error_type": "httpx_timeout"}
+        )
+        return None, error
+        
+    except asyncio.TimeoutError:
+        print("ERROR: LLM API request timed out (asyncio timeout)")
+        error = LLMError(
+            error_type="llm_timeout_error",
+            message="LLM API request timed out after 1 second",
+            details={"error_type": "asyncio_timeout"}
         )
         return None, error
         
@@ -132,7 +154,7 @@ def ask_llm(session: CrawlSession, system_prompt: str, user_instructions: str, p
         print(f"ERROR: Error calling LLM API: {str(e)}")
         error = LLMError(
             error_type="llm_api_error",
-            message=f"Error calling LLM API: {str(e)}",
-            details={"traceback": traceback.format_exc()}
+            message="Error calling LLM API",
+            details={"error_type": "general_api_error"}
         )
         return None, error
