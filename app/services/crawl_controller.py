@@ -57,7 +57,7 @@ class CrawlController:
                             "playwright_page_methods": [
                                 {"method": "wait_for_load_state", "args": ["networkidle"]}
                             ],
-                            "download_timeout": 20,
+                            "download_timeout": config.timeouts.scrapy.download_timeout,
                             "depth": depth + 1,
                             "prev_url": url,
                             "prev_action_key": action.target,
@@ -160,7 +160,7 @@ def extract_json_from_response(response_text: str) -> Tuple[Optional[LLMResponse
             error = SchemaValidationError(
                 error_type="schema_validation_error",
                 message=f"Failed to validate JSON against LLMResponse schema: {str(e)}",
-                details={"parsed_json": parsed, "error": str(e)}
+                details={"error_type": "validation_error"}
             )
             return None, error
             
@@ -169,6 +169,6 @@ def extract_json_from_response(response_text: str) -> Tuple[Optional[LLMResponse
         error = SchemaValidationError(
             error_type="extraction_error",
             message=f"Error extracting JSON from response: {str(e)}",
-            details={"response": response_text, "traceback": traceback.format_exc()}
+            details={"error_type": "json_extraction_error"}
         )
         return None, error

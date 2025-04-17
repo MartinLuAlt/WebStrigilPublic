@@ -48,7 +48,7 @@ async def crawl_endpoint(request: CrawlRequest):
         error = WebScraperError(
             error_type="unexpected_error",
             message=f"Unexpected error during crawl: {str(e)}",
-            details={"traceback": traceback.format_exc()}
+            details={"error_type": "api_endpoint_error"}
         )
         
         error_response = ErrorResponse(

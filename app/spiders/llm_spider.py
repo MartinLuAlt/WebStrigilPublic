@@ -19,7 +19,7 @@ class LLMPlaywrightSpider(Spider):
             "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
         },
         "PLAYWRIGHT_BROWSER_TYPE": "chromium",
-        "PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT": 30 * 1000,
+        "PLAYWRIGHT_DEFAULT_NAVIGATION_TIMEOUT": config.timeouts.playwright.navigation_timeout,
     }
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
@@ -43,7 +43,7 @@ class LLMPlaywrightSpider(Spider):
                     "playwright_page_methods": [
                         {"method": "wait_for_load_state", "args": ["networkidle"]}
                     ],
-                    "download_timeout": 20,
+                    "download_timeout": config.timeouts.scrapy.download_timeout,
                     "depth": 0,
                     "prev_url": None,
                     "prev_action_key": None,
@@ -69,7 +69,7 @@ class LLMPlaywrightSpider(Spider):
             error = ParsingError(
                 error_type="parsing_error",
                 message=f"Error parsing page {response.url}: {str(e)}",
-                details={"url": response.url, "traceback": traceback.format_exc()}
+                details={"url": response.url, "error_type": "parse_page_error"}
             )
             self.errors.append(error)
             self.logger.error(f"Error parsing page {response.url}: {str(e)}")
@@ -79,9 +79,10 @@ class LLMPlaywrightSpider(Spider):
         self.logger.error(f"Failure type: {type(failure)}")
         self.logger.error(repr(failure))
 
+        download_timeout = config.timeouts.scrapy.download_timeout
         error = NetworkError(
             error_type="network_error",
-            message=f"Request failed: {failure.request.url}",
+            message=f"Request failed: {failure.request.url} after {download_timeout} seconds",
             details={
                 "url": failure.request.url,
                 "error": str(failure.value),
@@ -92,7 +93,7 @@ class LLMPlaywrightSpider(Spider):
 
     async def _ask_llm(self, details, instruction, prev_page_action) -> LLMResponse | None:
         try:
-            system_prompt = config['system_prompt']
+            system_prompt = config.system_prompt
             decision_text, error = await ask_llm(self.session, system_prompt, instruction, details, prev_page_action)
             
             # If there was an error from the LLM call, add it to our errors list
@@ -126,7 +127,7 @@ class LLMPlaywrightSpider(Spider):
                     message="Failed to parse LLM response",
                     details={"url": details.url, "response": decision_text}
                 )
-                print("DEBUG: Failed to parse LLM response:", error)
+                print("DEBUG: Failed to parse LLM response:", e)
                 self.errors.append(error)
                 return None
             
@@ -136,9 +137,9 @@ class LLMPlaywrightSpider(Spider):
             error = LLMError(
                 error_type="llm_error",
                 message=f"Error in LLM processing: {str(e)}",
-                details={"url": details.url, "traceback": traceback.format_exc()}
+                details={"url": details.url, "error_type": "llm_processing_error"}
             )
-            print("DEBUG: Unexpected error in LLM processing:", error)
+            print("DEBUG: Unexpected error in LLM processing:", e)
             self.errors.append(error)
             return None
     

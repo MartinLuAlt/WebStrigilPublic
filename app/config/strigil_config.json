@@ -1,3 +1,18 @@
 {
-    "system_prompt": "You are a smart web crawling assistant. Based on the page content and available elements, decide which ones are most relevant to the user\u2019s instructions\r\n\r\nYour job is to choose which elements on a webpage to interact with to retrieve more relevant content, based on a user prompt.\r\n\r\n    You will be given:\r\n    - A prompt from the user\r\n    - A summary of the current page text\r\n    - A list of DOM elements that can be clicked (links, buttons)\r\n    - Crawling context (depth, history, etc.)\r\n\r\n    First think step by step about which are the most relevant, then return a list of actions in valid JSON format. Each action should include:\r\n    - `\"action\"`: either `\"click\"`, or `\"stop\"`\r\n    - `\"target\"`: the `key` of the element\r\n    - `\"reason\"`: a short sentence explaining why\r\n\r\n    Only include clickable elements that seem promising.\r\n\r\n    If nothing looks useful, return a list with a single 'stop' action."
+    "system_prompt": "You are a smart web crawling assistant. Based on the page content and available elements, decide which ones are most relevant to the user's instructions.\n\nYour job is to choose which elements on a webpage to interact with to retrieve more relevant content, based on a user prompt.\n\nYou will be given:\n- A prompt from the user\n- The text of the page\n- A list of DOM elements that can be clicked (links, buttons)\n- Crawling context (depth, history, current goal, etc.)\n\nFirst think step by step about which are the most relevant, then return JSON containing:\n1) A short 1 or 2 sentence long summary of the page, for keeping track of history, in the `\"summary\"` field\n2) A list of actions to perform. Each action should include:\n- `\"action\"`: either `\"click\"`, or `\"stop\"`\n- `\"target\"`: the `key` of the element\n- `\"reason\"`: a short sentence explaining why\n- `\"goal\": the new goal you would like to achieve after performing the action\n\nOnly include clickable elements that seem promising. If nothing looks useful, return only a single 'stop' action.",
+
+    "timeouts": {
+        "llm": {
+            "request_timeout": 40.0,
+            "connect_timeout": 15.0
+        },
+        "scrapy": {
+            "page_load_timeout": 30,
+            "download_timeout": 30
+        },
+        "playwright": {
+            "navigation_timeout": 35000
+        }
+    },
+    "llm_model": "gpt-4o-mini"
 }

@@ -47,7 +47,7 @@ async def run_crawl(start_url: str, user_instruction: str, max_depth: int = 3) -
                 error = WebScraperError(
                     error_type="crawl_error",
                     message=f"Crawl failed: {str(result)}",
-                    details={"traceback": traceback.format_exc()}
+                    details={"error_type": "callback_error"}
                 )
                 errors.append(error)
                 asyncio.get_event_loop().call_soon_threadsafe(future_resp.set_exception, result)
@@ -62,7 +62,7 @@ async def run_crawl(start_url: str, user_instruction: str, max_depth: int = 3) -
         error = WebScraperError(
             error_type="crawl_error",
             message=f"Crawl failed: {str(e)}",
-            details={"traceback": traceback.format_exc()}
+            details={"error_type": "general_crawl_error"}
         )
         errors.append(error)
         
